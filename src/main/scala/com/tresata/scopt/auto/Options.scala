@@ -54,15 +54,20 @@ trait Empty[C] extends Serializable {
 object Empty {
   object unwrapOption extends Poly1 {
     implicit def forProduct[C <: Product](implicit empty: Empty[C]) = at[Option[C]]{ c => c.getOrElse(empty.empty) }
+
     implicit def forDefault[T] = at[Option[T]]{ s => s.getOrElse(null.asInstanceOf[T]) }
   }
 
   implicit def forProduct[C <: Product, R <: HList, D <: HList](implicit
     gen: Generic.Aux[C, R],
     de: Default.AsOptions.Aux[C, D],
-    map: Mapper.Aux[unwrapOption.type, D, R]
+    map: shapeless.Strict[Mapper.Aux[unwrapOption.type, D, R]] // beats me why i need this strict here
   ): Empty[C] = new Empty[C] {
-    def empty: C = gen.from(de().map(unwrapOption))
+    def empty: C = {
+      implicit def actualMap: Mapper.Aux[unwrapOption.type, D, R] = map.value
+
+      gen.from(de().map(unwrapOption))
+    }
   }
 }
 

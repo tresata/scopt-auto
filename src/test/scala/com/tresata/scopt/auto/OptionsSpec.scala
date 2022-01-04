@@ -38,6 +38,10 @@ object OptionsSpec {
   case class OtherConfig(
     path: Option[File] = None
   )
+
+  case class Defaults(x: Int = 1, y: String = "ha", z: Boolean = false)
+
+  case class NestedDefaults(switch: Boolean = false, defaults: Defaults)
 }
 
 class OptionsSpec extends AnyFunSpec {
@@ -104,6 +108,14 @@ class OptionsSpec extends AnyFunSpec {
 
       val otherConfig2 = otherConfigOptions.parse(" ")
       assert(otherConfig2 === OtherConfig())
+    }
+
+    it("should create a parser for NestedDefaults") {
+      val nestedDefaultsOptions = implicitly[Options[NestedDefaults]]
+
+      val nestedDefaults1 = nestedDefaultsOptions.parse("--switch false")
+      println(nestedDefaults1)
+      assert(nestedDefaults1 === NestedDefaults(defaults = Defaults()).copy(switch = false))
     }
   }
 }
