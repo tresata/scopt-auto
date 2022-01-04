@@ -34,6 +34,10 @@ object OptionsSpec {
     jars: Seq[File] = Seq(),
     kwargs: Map[String, String] = Map()
   )
+
+  case class OtherConfig(
+    path: Option[File] = None
+  )
 }
 
 class OptionsSpec extends AnyFunSpec {
@@ -66,26 +70,40 @@ class OptionsSpec extends AnyFunSpec {
 
     it("should create parser for VM") {
       val vmOptions = implicitly[Options[VM]]
+
       val vm1 = vmOptions.parse("--host.name someserver --host.ip 192.168.1.1 --tag Name=MyVM")
       assert(vm1 === VM(("Name", "MyVM"), Server("someserver", "192.168.1.1"), 0))
     }
 
     it("should create parser for Empty") {
       val emptyOptions = implicitly[Options[Empty]]
+
       val empty1 = emptyOptions.parse(" ")
       assert(empty1 === Empty())
     }
 
     it("should create parser for NestedEmpty") {
       val nestedEmptyOptions = implicitly[Options[NestedEmpty]]
+
       val nestedEmpty1 = nestedEmptyOptions.parse(" ")
       assert(nestedEmpty1 === NestedEmpty(Empty()))
     }
 
     it("should create a parser for Config") {
       val configOptions = implicitly[Options[Config]]
+
       val config1 = configOptions.parse("--out /path/to/some/file")
       assert(config1 === Config().copy(out = new File("/path/to/some/file")))
+    }
+
+    it("should create a parser for OtherConfig") {
+      val otherConfigOptions = implicitly[Options[OtherConfig]]
+
+      val otherConfig1 = otherConfigOptions.parse("--path /path/to/some/file")
+      assert(otherConfig1 === OtherConfig().copy(path = Some(new File("/path/to/some/file"))))
+
+      val otherConfig2 = otherConfigOptions.parse(" ")
+      assert(otherConfig2 === OtherConfig())
     }
   }
 }
