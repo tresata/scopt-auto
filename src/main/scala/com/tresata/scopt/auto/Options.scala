@@ -40,6 +40,8 @@ object Options {
       case None => throw new IllegalArgumentException("invalid arguments")
     }
   }
+
+  def apply[C](implicit options: Options[C]): Options[C] = options
 }
 
 private[auto] object Shared {
