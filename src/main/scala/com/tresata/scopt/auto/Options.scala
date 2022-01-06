@@ -73,6 +73,22 @@ object Empty {
   }
 }
 
+trait TypeSummary[T] extends Serializable {
+  def typeString: String
+}
+
+private[auto] trait LowPriorityTypeSummaryImplicits {
+  implicit def forAny[T](implicit tt: TypeTag[T]): TypeSummary[T] = new TypeSummary[T] {
+    def typeString: String = tt.tpe.toString
+  }
+}
+
+object TypeSummary extends LowPriorityTypeSummaryImplicits{
+  implicit def forOption[T](implicit tt: TypeTag[T]): TypeSummary[Option[T]] = new TypeSummary[Option[T]] {
+    def typeString: String = tt.tpe.toString
+  }
+}
+
 trait ProductBuilder[R, R1] extends Serializable {
   def parser[C](gen: LabelledGeneric.Aux[C, R1], de: List[Option[Any]]): Option[OParser[_, C]]
 }
@@ -105,7 +121,7 @@ object ProductBuilder extends LowPriorityProductBuilderImplicits {
   implicit def forHList[K <: Symbol, V, T <: HList, R1 <: HList](implicit
     w: Witness.Aux[K],
     r: Read[V],
-    tt: TypeTag[V],
+    ts: TypeSummary[V],
     mod: Modifier.Aux[R1, K, V, V, R1],
     tpb: ProductBuilder[T, R1]
   ): ProductBuilder[FieldType[K, V] :: T, R1] = new ProductBuilder[FieldType[K, V] :: T, R1] {
@@ -116,9 +132,9 @@ object ProductBuilder extends LowPriorityProductBuilderImplicits {
 
       val name = toSnakeCase(w.value.name)
       val required = de.head.map{ _ => "optional" }.getOrElse("required")
-      val default = de.head.map{ x => s" (default ${x})" }.getOrElse("")
+      val default = de.head.map{ case None => ""; case x => s" (default ${x})" }.getOrElse("")
       val o = opt[V](name)
-        .text(s"${required} ${tt.tpe}${default}")
+        .text(s"${required} ${ts.typeString}${default}")
         .action{ (v: V, c: C) => gen.from(mod(gen.to(c), _ => v)) }
 
       Some(OParser.sequence(
@@ -142,7 +158,7 @@ object NestedProductBuilder {
   implicit def forHList[K <: Symbol, V, T <: HList, R1 <: HList](implicit
     w: Witness.Aux[K],
     r: Read[V],
-    tt: TypeTag[V],
+    ts: TypeSummary[V],
     mod: Modifier.Aux[R1, K, V, V, R1],
     tpb: NestedProductBuilder[T, R1]
   ): NestedProductBuilder[FieldType[K, V] :: T, R1] = new NestedProductBuilder[FieldType[K, V] :: T, R1] {
@@ -154,9 +170,9 @@ object NestedProductBuilder {
 
       val name = s"${name0}.${toSnakeCase(w.value.name)}"
       val required = de.head.map{ _ => "optional" }.getOrElse("required")
-      val default = de.head.map{ x => s" (default ${x})" }.getOrElse("")
+      val default = de.head.map{ case None => ""; case x => s" (default ${x})" }.getOrElse("")
       val o = opt[V](name)
-        .text(s"${required} ${tt.tpe}${default}")
+        .text(s"${required} ${ts.typeString}${default}")
         .action{ (v: V, c0: C0) =>
           gen0.from(mod0(gen0.to(c0), { c =>
             gen.from(mod(gen.to(c), _ => v))

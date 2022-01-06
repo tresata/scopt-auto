@@ -11,7 +11,7 @@ object OptionsSpec {
 
   case class Cpu(mhz: Int, cores: Int = 4)
   case class Drive(size: Int, opal: Boolean = false)
-  case class Laptop(cpu: Cpu, drive: Drive)
+  case class Laptop(serial:Option[String] = None, cpu: Cpu, drive: Drive)
 
   case class Server(name: String, ip: String)
   case class VM(tag: (String, String), host: Server, uptime: Int = 0)
@@ -64,10 +64,10 @@ class OptionsSpec extends AnyFunSpec {
       val laptopOptions = implicitly[Options[Laptop]]
 
       val laptop1 = laptopOptions.parse("--cpu.mhz 3000 --cpu.cores 8 --drive.size 2000 --drive.opal true")
-      assert(laptop1 === Laptop(Cpu(3000, 8), Drive(2000, true)))
+      assert(laptop1 === Laptop(None, Cpu(3000, 8), Drive(2000, true)))
 
-      val laptop2 = laptopOptions.parse("--cpu.mhz 2000 --drive.size 1000")
-      assert(laptop2 === Laptop(Cpu(2000, 4), Drive(1000, false)))
+      val laptop2 = laptopOptions.parse("--serial 12345 --cpu.mhz 2000 --drive.size 1000")
+      assert(laptop2 === Laptop(Some("12345"), Cpu(2000, 4), Drive(1000, false)))
 
       intercept[IllegalArgumentException](laptopOptions.parse("--cpu.mhz 2000"))
     }

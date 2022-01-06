@@ -51,7 +51,7 @@ java.lang.IllegalArgumentException: invalid arguments
 scala> Options[Laptop].parse("--help")
 Usage:  [options]
 
-  --serial <value>      optional Option[String] (default None)
+  --serial <value>      optional String
   --cpu.mhz <value>     required Int
   --cpu.cores <value>   optional Int (default 4)
   --drive.size <value>  required Int
